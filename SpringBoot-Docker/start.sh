@@ -1,1 +1,1 @@
-docekr run -d --name demo -p 8080:8080 demo:1.0
+docekr run -d --log-opt max-size=100m --log-opt max-file=10 --name demo -p 8080:8080 demo:1.0
