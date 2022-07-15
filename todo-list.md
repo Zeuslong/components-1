@@ -1,0 +1,3 @@
+- [ ] Apply a open source license
+- [ ] Perfect the system of Java
+- [ ] Research and development the docker build.sh with log options
