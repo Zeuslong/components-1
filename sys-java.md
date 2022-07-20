@@ -2166,7 +2166,626 @@ ext3(最大文件大小: 2TB，最大文件极限: 仅受文件系统大小限�
 
 # 计算机网络
 
+## 四层结构
 
+　　┌─────┐
+　　│应用层│
+　　├─────┤
+　　│传输层│
+　　├─────┤
+　　│网络层│
+　　├─────┤
+　　│链路层│
+　　├─────┤
+
+
+1. 链路层
+
+负责在网络链路上传递信息
+0
+
+2. 网络层
+
+IP 协议，提供源于端点之间的联系
+
+3. 传输层
+
+TCP 协议，提供可靠连接
+
+4. 应用层
+
+HTTP 协议，向应用程序提供访问网络资源的API
+
+## 七层结构
+
+　　┌─────┐
+　　│　应用层　│←第七层
+　　├─────┤
+　　│　表示层　│
+　　├─────┤
+　　│　会话层　│
+　　├─────┤
+　　│　传输层　│
+　　├─────┤
+　　│　网络层　│
+　　├─────┤
+　　│数据链路层│
+　　├─────┤
+　　│　物理层　│←第一层
+　　└─────┘
+
+1. 物理层
+
+负责最后将信息编码成电流脉冲或其它信号用于网上传输
+
+2. 数据链路层
+
+通过物理 网络链路提供可靠的数据传输。
+
+3. 网络层
+
+负责在源和终点之间建立连接。它一般包括网络寻径，还可能包括流量控制、错误检查等。
+
+4. 传输层
+
+向高层提供可靠的端到端的网络数据流服务。传输层的功能一般包括流控、多路传输、虚电路管理及差错校验和恢复。
+
+5. 会话层
+
+建立、管理和终止表示层与实体之间的通信会话。通信会话包括发生在不同网络应用层之间的服务请求和服务应答，
+这些请求与应答通过会话层的协议实现。它还包括创建检查点，使通信发生中断的时候可以返回到以前的一个状态。
+
+6. 表示层
+
+提供多种功能用于应用层数据编码和转化，以确保以一个系统应用层发送的信息可以被另一个系统应用层识别。
+表示层的编码和转化模式包括公用数据表示格式、性能转化表示格式、公用数据压缩模式和公用数据加密模式。
+
+7. 应用层
+
+向应用程序提供访问网络资源的API（Application Program Interface，应用程序接口）组成
+
+## URI
+
+叫做统一资源标识符，唯一的标示一个资源，就像身份证 id 一样
+
+强调标识某一个资源
+
+比如，http://www.sina.com.cn代表了新浪网，admin@qq.com代表了某一个人的qq邮箱，你的qq号也是一个URI(腾讯服务器内可以识别就是你的QQ账户)
+
+## URL
+
+叫统一资源定位符，标识一个互联网资源的位置，并指定对其进行操作或获取该资源的方法。可能通过网络“位置”进行标识。
+
+强调标识某一个地点
+
+URI 是 URL 的父集
+
+## URI 与 URL
+
+URI强调的是给资源标记命名，URL强调的是给资源定位
+
+URI标记了一个网络资源，仅此而已；  URL标记了一个WWW互联网资源（用地址标记），并给出了他的访问地址。
+
+## TPC
+
+### TCP 三次握手
+
+1. 客户端通过向服务器端发送一个SYN消息来创建一个主动打开请求，客户端把这段连接的消息的序号设定为随机数A。
+2. 服务器端应当为一个合法的SYN回送一个SYN/ACK。ACK的确认码应为A+1，SYN/ACK包本身又有一个随机产生的序号B。
+3. 最后，客户端再发送一个ACK。当服务端收到这个ACK的时候，就完成了三路握手，并进入了连接创建状态。此时包的序号被设定为收到的确认号A+1，
+   而响应号则为B+1。
+
+### TCP 三次握手的中间状态
+
+如果服务器端接到了客户端发的 SYN 并且回复 SYN-ACK 后，客户端掉线了，服务器端没有收到客户端回来的ACK（也就是第三部客户端的应答时候），那么，这个连接处于一个中间状态，即没成功，也没失败。
+于是，服务器端如果在一定时间内没有收到的 TCP 会重发 SYN-ACK。如果重发达到一定次数，那么 TCP 才会断开这个连接。
+
+### TCP 为什么要握手三次
+
+1. 如果两次，那么服务端无法确定服务端的信息客户端是否能收到，所以如果服务端先说话，可能后面的客户端都收不到，会出现问题
+2. 如果四次，那么就造成了浪费，因为在三次结束之后，就已经可以保证客户端可以给服务端发信息，客户端也可以收到服务端的信息
+
+### TCP 四次挥手
+
+1. TCP 客户端发送一个 FIN，用来关闭客户到服务器的数据传送。
+2. 服务器收到这个 FIN，它发回一个 ACK，确认序号为收到的序号加 1。
+3. 服务器关闭客户端的连接，发送一个 FIN 给客户端。
+4. 客户端发回 ACK 报文确认，并将确认序号设置为收到序号加 1。
+
+### TCP 为什么要挥手四次
+
+因为客户端与服务端分别释放资源都需要两次才能确认已经释放完毕
+
+### TCP 与 UDP 区别
+
+1. TCP面向连接（如打电话要先拨号建立连接）;UDP是无连接的，即发送数据之前不需要建立连接
+2. TCP提供可靠的服务。也就是说，通过TCP连接传送的数据，无差错，不丢失，不重复，且按序到达;UDP尽最大努力交付，即不保证可靠交付
+3. 每一条TCP连接只能是点到点的;UDP支持一对一，一对多，多对一和多对多的交互通信
+
+### 滑动窗口协议
+
+1. TCP协议的两端分别为发送者A和接收者B，由于是全双工协议，因此A和B应该分别维护着一个独立的发送缓冲区和接收缓冲区
+
+2. 发送窗口是发送缓存中的一部分，是可以被TCP协议发送的那部分，其实应用层需要发送的所有数据都被放进了发送者的发送缓冲区
+
+3. 每次成功发送数据之后，发送窗口就会在发送缓冲区中按顺序移动，将新的数据包含到窗口中准备发送
+
+4. 发送窗口中相关的有四个概念：已发送并收到确认的数据（不再发送窗口和发送缓冲区之内）、已发送但未收到确认的数据（位于发送窗口之中）、
+   允许发送但尚未发送的数据以及发送窗口外发送缓冲区内暂时不允许发送的数据
+
+- 窗口
+
+  对应的是一段可以被发送者发送的字节序列，其连续的范围称之为“窗口”
+
+- 滑动
+
+  是指这段“允许发送的范围”是可以随着发送的过程而变化的，方式就是按顺序“滑动”
+
+### 滑动窗口协议过程
+
+假设 A 给 B 发送数据
+
+在 TCP 建立的时候，B 会告诉 A 自己的接受的窗口的大小，比如为 20
+
+然后 A 开始给 B 发送消息，发送完毕后，窗口还不能后移，要收到 B 的确认后，窗口才能往后滑动，离开已经发送了的数据
+
+当 B 接收数据后，B 收到连续的分组数据后会确认发送，然后自己的窗口会往后滑动，但是对于乱序的数组则会先保留下来
+
+### 拥塞控制
+
+#### 慢启动过程
+
+设置一个 Congestion Window 参数，表示发送的数据的大小
+
+1. 连接建好的开始先初始化cwnd(Congestion window) = 1，表明可以传一个MSS(Maximum Segment Size，最大报文长度)大小的数据。
+
+2. 每当收到一个ACK，cwnd++; 呈线性上升
+
+3. 每当过了一个RTT(往返时间)，cwnd = cwnd*2; 呈指数让升
+
+4. 当 cwnd 达到了上限的时候也就是 cwnd >= ssthresh，一般来讲 ssthresh 的大小为 65535 字节，就会进入拥塞避免算法
+
+#### 拥塞避免
+
+过程
+
+1. 收到一个ACK时，cwnd = cwnd + 1/cwnd
+
+2. 当每过一个RTT时，cwnd = cwnd + 1
+
+#### 快速恢复
+
+快速恢复发生在网络发生拥堵之后，如果发送方连续收到三个确认，那么不是进入慢启动状态，而是进入到快速恢复的状态
+
+1. 当发送发连续接收到三个确认时，就执行乘法减小算法，把慢启动上限（ssthresh）减半，但是接下来并不执行慢开始算法。
+
+2. 此时不执行慢启动算法，而是把cwnd设置为ssthresh的一半， 然后执行拥塞避免算法，使拥塞窗口缓慢增大。
+
+## HTTP
+
+### 什么是 HTTP
+
+HTTP 是一种文档传输协议，主要运用在 WEB 应用当中。在网络的 TCP/IP 协议族 4 个层次当中，位于应用层。它允许将超文本标记语言(HTML)文档从Web服务器传送到客户端的浏览器。简捷、快速的方式，适用于分布式超媒体信息系统。
+
+### HTTP 工作流程
+
+当客户端访问一个域名的时候，会先用 DNS 协议解析域名得到对应的 IP 地址，然后通过 HTTP 协议生成针对目标 WEB 服务器的 HTTP 请求报文
+
+然后将 HTTP 报文传给传输层的 TCP 协议，按照 TCP 协议把报文分割成多端，然后保证每一段都可靠的传给对方
+
+接着位于网络层的 IP 协议曾，在路由器当中利用 IP 地址与 Mac 地址寻找合适的中转站地址，传送报文
+
+当服务端收到报文后，通过 TCP 协议把报文组合起来，上传给 HTTP 协议
+
+应用层的 HTTP 协议解析报文得到内容并且响应
+
+### HTTP 特点
+
+1. 支持客户/服务器模式，基于TCP实现
+2. 简单快速
+   客户向服务器请求服务时，只需传送请求方法和路径。请求方法常用的有GET、POST、DELETE、PUT。每种方法规定了客户与服务器联系的类型不同。
+   由于HTTP协议简单，使得HTTP服务器的程序规模小，因而通信速度很快
+3. 灵活
+   HTTP允许传输任意类型的数据对象。正在 传输的类型由 Content-Type 加以标记
+4. 短连接
+   短连接的含义是限制每次连接只处理一个请求。服务器处理完客户的请求，并收到客户的应答后，即断开连接。采用这种方式可以节省传输时间
+5. 无状态
+   HTTP协议是无状态协议。无状态是指协议对于事务处理没有记忆能力。缺少状态意味着如果后续处理需要前面的信息，则它必须重传，
+   这样可能导致每次连接传送的数据量增大。另一方面，在服务器不需要先前信息时它的应答就较快
+
+### HTTP 缺点
+
+1. 通讯使用明文，未加密，并且 TCP/IP 协议是可能会被窃听的网络，所以通讯内容可能会被窃听
+2. 没有验证通讯方的身份，因此可能会遭遇伪装
+3. 没有办法验证报文的完整性，所以可能会被篡改
+
+### HTTP 方法
+
+get 表示获取资源
+
+post 表示传输实体主体
+
+put 表示传输文件
+
+head 获取报文首部，与 GET 一样只是不返回报文主体内容
+
+delete 删除文件
+
+options 查看该资源支持何种何种请求方法，例如支持 GET 或者 HEAD方法
+
+trace 追踪路径，让 web 服务器将之前的请求通讯环回复给客户端
+
+#### GET 与 POST 区别
+
+1. 资源角度：get 是从服务器端获取资源，post 是向服务区发送数据
+2. 提交方式：get 向服务器提交 URL 的方式来通通信，post 通过 Html header 当中提交
+3. 获取数据方式：get：服务端用 Request.QueryString 来获取变量的值；post：用 Request.Form 来提交数据的值
+4. 数据大小：get 最多 1024 字节；post 没有大小限制
+5. 安全：get 的信息会在地址栏显示；post 信息不会
+
+### HTTP 1.0 与 1.1 区别
+
+1. HTTP 1.1支持长连接（PersistentConnection） keep-alive
+
+  HTTP 1.0 规定浏览器与服务器只保持短暂的连接，浏览器的每次请求都需要与服务器建立一个 TCP 连接，服务器完成请求处理后立即断开 TCP 连接，服务器不跟踪每个客户也不记录过去的请求。
+
+  HTTP 1.1 则支持持久连接，Connection 请求头的值为 Keep-Alive 时，客户端通知服务器返回本次请求结果后保持连接；Connection 请求头的值为 close 时，客户端通知服务器返回本次请求结果后关闭连接
+
+2. HTTP 1.1 增加 host 字段
+
+  在 HTTP1.0 中认为每台服务器都绑定一个唯一的 IP 地址，因此，请求消息中的 URL 并没有传递主机名（hostname）。但随着虚拟主机技术的发展，在一台物理服务器上可以存在多个虚拟主机（Multi-homed Web Servers），并且它们共享一个IP地址。
+
+### HTTP 请求报文结构
+
+Http 报文分两种：1.请求报文。2.响应报文，但大致结构都一样：
+
+1. 报文首部
+
+报文首部当中存放这 客户端 或者 服务端 请求或者响应的内容以及属性
+
+2. 空行符
+
+用来区分报文首部和报文主体
+
+3. 消息体
+
+存放了客户端给服务端的消息数据或者服务端给客户端的消息数据
+
+#### 请求报文报文首部
+
+请求报文当中的报文首部含有如下内容
+
+1. 请求行
+
+包含请求的方法、请求的 URI 和 HTTP 的版本
+
+2. 首部字段
+
+包含表示请求和响应的各种条件和属性的各类首部
+
+#### 响应报文报文首部
+
+响应报文的报文首部有如下内容
+
+1. 状态行
+
+状态行包含表明响应结果的状态码、原因短句、和 Http 版本
+
+原因短句是描述信息，例如 200 有 OK 500 有 Internal Server Error
+
+2. 首部字段
+
+包含表示请求和响应的各种条件和属性的各类首部
+
+### DNS 服务
+
+DNS 是一个位于应用层的协议，用来解析域名对应的 IP 地址。
+
+### HTTP 持久连接
+
+Http 每一次请求过后都会选择断开连接，所以持久连接是为了避免因为多次请求而造成的频繁的连接建立和断开
+
+持久连接在 HTTP/1.1 当中被提出，只要任意一端没有明显的提出断开链接，就保持 TCP 连接
+
+在 HTTP/1.1 当中，所有的连接默认都是持久连接
+
+持久链接当中的 HTTP 请求头中添加一个字段 Connection-keep alive，来保持两者之间的联系
+
+### HTTP 管线化
+
+在持久化之前，发送请求后需要等待并收到响应后，才能发送下一个请求。管线化技术可以让请求不用等待响应也可以直接发送下一个请求
+
+管线化技术可以同时发送多个请求，提升了持久化之后的请求速度
+
+### HTTP Cookie
+
+Http 是无状态的协议，也就是对之前发送过的请求或者响应的状态感知得到，但在网站当中，又需要去记录例如登陆等等一些状态信息。
+
+通过在请求和响应报文写入 Cookie 信息来保持这样的联系
+
+客户端第一次向服务器发送请求的时候，获取到服务器的响应报文，保存响应报文当中的 Cookie 信息，然后在下一次发送请求信息的时候，把 Cookie 信息附带发送出去，然后服务器端收到了请求报文后，解析到 Cookie 信息得到以前的状态
+
+### 状态码
+
+1** 信息，接受的请求正在处理
+
+2** 成功，操作被成功接收并处理
+
+3**	重定向，需要进行附加操作以完成请求
+
+4** 客户端错误，请求包含语法错误或无法完成请求
+
+5** 服务器错误，服务器在处理请求的过程中发生了错误
+
+**200**
+
+200 正常处理
+
+204 成功处理，但是响应参数当中不包任何实体内容
+
+206 请求了一部分内容，服务器成功处理了这种请求
+
+**300**
+
+301 永久重定向，表示请求的资源以及被分配了新的 URI，以后需要使用现在指向的URI
+
+302 临时重定向
+
+303 请求的资源有另外的一个 URL 应使用 GET 方法来定向获取请求的资源
+
+**400**
+
+400 报文当中存在语法错误
+
+401 表示需要通过 http 认证
+
+403 表示服务器不允许访问这个资源
+
+404 没有找到
+
+**500**
+
+500 表示服务端执行错误
+
+503 表示服务端超出负载或者正在停机维护
+
+### Session 与 Cookie 的区别
+
+**存储地方**
+
+Session 存放在服务端，表示一个会话从开始到结束的阶段
+
+Cookies 存放在服务器，是服务器存储数据的一个回执单，可以用来保存部分不隐私的数据
+
+**安全**
+
+Session 位于服务端，不会被盗取
+
+Cookies 的文件通过一定手段盗取并通过浏览器的承认后，就可以伪装成别人的请求来发送，所以不安全
+
+## HTTPS 
+
+### 什么是HTTPS
+
+https 协议是 http 协议的加强版，它解决了 http 协议当中明文、传送方未知以及容易被篡改的问题。所以 http 协议加上加密处理和认证以及完整性保护等于 https
+
+https 协议的通讯过程和 http 大致相同，但是优先和 ssl 协议通讯，再由 ssl 协议与 tcp 通讯，
+
+ssl 可以在两端建立一个安全的通讯线路，并且加密内容，同时 ssl 可以通过验证证书的方式来验证合法性，
+
+### 证书验证方式
+
+1. 服务器 用RSA生成公钥和私钥
+2. 把公钥放在证书里发送给客户端，私钥自己保存
+3. 客户端首先向一个权威的服务器检查证书的合法性，如果证书合法，客户端产生一段随机数，这个随机数就作为通信的密钥，我们称之为对称密钥，
+   用公钥加密这段随机数，然后发送到服务器
+4. 服务器用密钥解密获取对称密钥，然后，双方就已对称密钥进行加密解密通信了
+
+## IP 协议
+
+### 什么是 IP 协议
+
+IP 工作要从 IP 协议说起
+
+IP 协议的主要内容是把各种数据包发送到目的，在 IP 协议当中，这个传输的过程依靠 IP 地址与 MAC 地址，IP 地址可以表示物理机处于何种网络结构当中，MAC 地址可以唯一的表示一台主机
+
+在不同的局域网上进行传输的时候，利用 ARP 协议翻译 IP 地址，查找下一站中转设备的 MAC 地址，来搜索下一个中转的目标
+
+### ARP 协议
+
+ARP（Address Resolution Protocol）叫做地址解析协议，是根据IP地址获取物理地址的一个TCP/IP协议。主机发送信息时将包含目标IP地址的ARP请求广播到网络上的所有主机，并接收返回消息，
+以此确定目标的物理地址；收到返回消息后将该IP地址和物理地址存入本机ARP缓存中并保留一定时间，下次请求时直接查询ARP缓存以节约资源。
+
+## WebSocket
+
+### 什么是 WebSocket
+
+WebSocket 是一个网络协议，允许两个相连的端在一个单一的 TCP 连接上进行双向消息通讯。
+
+在 WebSocket 当中，连接通过 HTTP 和 WebSocket 端点交互的方式建立。连接的发起者发送一个专门指定的 Http 请求，其中包含有 WebSocket 端点的 URL。这过程叫做打开阶段握手。如果服务器愿意接受连接，那么服务器就会生辰一个打开阶段握手响应的 HTTP 响应并返回给客户端。此时 TCP 连接就已经建立，能够保证 WebSocket 消息的往返传递。
+
+WebSokcet 的连接一直保持活跃直到任意一方决定终止连接或者被某些因素导致连接中断
+
+WebSocket 协议当中主要包含两个帧：控制帧与数据帧。控制帧用于控制内部功能逻辑的数据传输，例如关闭等；数据帧定义了携带应用数据的 WebSocket 传输的种类，文本型或者二进制型
+
+### 如何创建一个 WebSocket
+
+```java
+// 声明一个端点，链接地址为 :ws://localhost:8080/hello
+@ServerEndpoint("/hello")
+public class HelloWorldEndpoint {
+
+
+    //接受消息的时候被调用的方法
+    @OnMessage
+    public String hello(String message) {
+        System.out.println("Received : "+ message);
+        return message;
+    }
+
+    //端点第一次链接的时候被调用的方法
+    @OnOpen
+    public void myOnOpen(Session session,Endpoint endpoint) {
+        System.out.println("WebSocket opened: " + session.getId());
+    }
+
+    //端点关闭的时候被调用的方法
+    @OnClose
+    public void myOnClose(CloseReason reason) {
+        System.out.println("Closing a WebSocket due to " + reason.getReasonPhrase());
+    }
+
+    //这里处理异常
+    @onErrot
+    public void errorHandler(Throwable a){
+        System.out.println("这里处理异常")
+    }
+
+}
+```
+
+当一个客户端与 Websocket 服务器建立链接的时候，就会有一个端点实例被创建，如果 WebSocket 端点有多个用户链接，那么 WebSocket 的实现将示例化多次，链接的每个新客户都会示例化一次
+
+### WebSocket 生命周期
+
+websocket 的生命周期有四个阶段
+
+第一，打开阶段
+
+这个阶段，Websokcet 会收到第一个事件叫走打开通知，表示到 Websocket 会话另一端的连接已经建立完成
+
+第二，会话阶段
+
+当打开通知被两端都收到的时候，就可以相互之间发送消息
+
+第三，Error
+
+在 Websokcet 运行的时候，会产生一些错误，一般会是两种：一种是致命错误，这种错误将导致链接关闭，无法再传送消息。第二种是非致命错误，WebSocket 可以自己选择是否继续发送消息或者接受消息
+
+第四，关闭阶段
+
+关闭阶段，无论哪个端点都可以自己主动的执行关闭事件，然后发送一个通信信息，告知另一端这边准备关闭了，不需要得到别人的确认，也可以直接关闭
+
+### WebSocket Session
+
+从浏览器客户端发起一系列 Http 请求的同一用户都会与同一个 HttpSession 相关联
+
+WebSocket 的握手连接也是一种 Http 交互，所以每个 WebSocket Session 对象都与 Http Sesion 对应想有关系，在每个运行于 web 应用的 WebSocket 上都存在一个与它关联的 HttpSession 对象
+
+如果 Http Session 被中断，也例如超时，那么 Websocket 实现会关闭 Webscoket Session
+
+Session 表示的是与单个连接向关联的状态。
+
+Session 在创建 WebSocket 连接的时候被创建，在创建的时候会被分配一个唯一的标识，一个客户端对应一个 Session
+
+Session 可以获取 RemoteEndpoint 来连接另外一个端点，也可以管理 Session 端点本身例如关闭连接等等功能
+
+### 如何获取 WebSocket Session
+
+因为 webSocket 的连接建立阶段是通过 Http 请求完成的，所以如果要 webSocket 持有 HttpSession，在 WebSocket 当中这个过程是通过自定义类并且继承 Configurator 类并重写方法
+
+```java
+    public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response) {
+
+          HttpSession httpSession = (HttpSession) request.getHttpSession();
+　　　　　　
+          sec.getUserProperties().put(HttpSession.class.getName(), httpSession);
+    }
+
+```
+
+在 HandshakeRequest 当中封装了 HttpSession，可以获取到，ServerEndpointConfig 可以把 HttpSession 保存起来
+
+修改注解，再通过 EndPointConfig 来获取
+
+```java
+
+@ServerEndpoint(value = "/example",
+                configurator = GetHttpSessionConfigurator.class)
+public class GetHttpSessionSocket
+{
+    private Session wsSession;
+    private HttpSession httpSession;
+
+    @OnOpen
+    public void open(Session session, EndpointConfig config) {
+        this.wsSession = session;
+        this.httpSession = (HttpSession) config.getUserProperties()
+                                           .get(HttpSession.class.getName());
+    }
+
+    @OnMessage
+    public void echo(String msg) throws IOException {
+        wsSession.getBasicRemote().sendText(msg);
+    }
+}
+
+```
+
+最后配置一个 web 的 Http 监听器
+
+```java
+public class RequestListener implements ServletRequestListener {
+
+    public void requestInitialized(ServletRequestEvent sre)  {
+        //将所有request请求都携带上httpSession
+        ((HttpServletRequest) sre.getServletRequest()).getSession();
+    }
+
+    public RequestListener() {
+    }
+
+    public void requestDestroyed(ServletRequestEvent arg0)  {
+    }
+}
+
+```
+
+### WebSocket 消息通讯
+
+Websocket 消息通讯支持三种消息类型：文本信息、二进制信息、Ping/Pong消息
+
+文本消息 的两种发送方式
+
+```java
+//把消息全部发送过去
+public void sendText(String args) throws IOException
+
+//以片段的方式发送消息
+public void sendText(String args,boolean isLast) throws IOException
+
+```
+
+二进制消息 的两种发送方式
+
+二进制消息适合发送图片、音频这样的特殊格式的数据
+
+```java
+//整段发送消息
+public void sendBinary(ByteBuffer data) throws IOException
+
+//以片段的方式发送消息
+public void sendBinary(ByteBuffer partialByte,boolean isLast) throws IOException
+
+```
+
+Ping/Pong 的发送方式
+
+Ping/Pong 是用来检测连接的健康性和测算连接的效率的，一般最大为 125 个字节
+
+```java
+public void sendPing(ByteBuffer applicationData) throws IOException,IllegalArgumentException
+
+public void sendPong(ByteBuffer applicationData) throws IOException,IllegalArgumentException
+
+```
+
+*！*
+
+1. WebSocket 可以传送 Java 对象，取决于把 Java 对象转化成什么样的消息
+2. 每当有新的客户端连接进来的时候，都会创建一个新的 Websocket 的端点
+3. 任意时候只能有一个线程访问某一个端点
+4. Java WebSocket API 可以保证消息以片段的方式发送时
 
 # 系统架构
 
