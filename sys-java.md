@@ -2,33 +2,47 @@
 
 ## Object
 
-### == & equals()
+### ==
 
 `==` 测试的两个引用是否指向了同一个对象。
 
-`equals()` 如果被重写，则按照重写规则匹配；如果 `equals()` 没有重写，那么默认为 Object 当中的 `equals()` ，其中的实现是使用 `==`。
+比较引用时比较的是堆内存地址；比较基础数据类型时比较的是值是否相等。
 
-基本数据类型：byte、short、char、int、float、long、double、boolean 中 `==` 比较的是他们的值是否相等。
+> 基础数据类型：byte、short、char、int、float、long、double、boolean。
 
-引用数据类型使用 `== `比较的时候比较的是他们的堆内存地址。
+### equals()
 
-String、Integer、Date 在这些类当中 `equals()` 有其自身的实现（一般都是用来比较对象的成员变量值是否相同），而不再是比较类在堆内存中的存放地址了。 
+ `equals()` 是 Object 类的一个方法，用来比较对象是否相等。
+
+该方法可以被重写，在没有重写的时候，内部使用 `==` 操作符进行比较
+
+> String、Integer、Date 这些类都重写了 equals() 方法
 
 ### hashCode()
 
-在 Object 类中，`hashCode()`方法是本地方法，具体计算 hash 的值根据 JVM 的实现有不同，也可以通过 `	--hashCode = 1` 来指定使用特定的 hash 计算方式。
+`hashCode()` 是 Object 类的一个方法，用来计算对象的 hash 值。
 
-在没有重写的 `equals()` 当中，采用 `==` 来比较对象，所以如果两个对象相同，那么它们的 `hashCode()`值一定要相同；又因为 hash 计算本身可能会产生冲突，所以如果两个对象的 `hashCode()` 相同，它们并不一定相同。
+`hashCode()`方法是本地方法，具体计算 hash 的值根据 JVM 的实现有不同，可以在启动 JVM 时通过 `--hashCode` 参数来指定使用特定的 hash 计算方式。
+
+又因为 hash 计算本身可能会产生 hash 冲突，所以如果两个对象的 `hashCode()` 相同，它们并不一定相同。
 
 ### wait()
 
-`wait()` 方法能够让持有锁的一个线程让出锁，然后进入锁对象的等待池，如果再次被唤醒，就进入锁对象的锁池。
+`wait()` 是 Object 类的一个方法，让当前线程让出锁，然后进入该对象的等待池，直到被唤醒。
 
-当获取锁失败，或者自己放弃锁后，线程会被加入到一个 Wait set 当中去，等待被唤醒，也就是等待别的线程释放锁的时候，会唤醒这 wait set 当中的某一个或全部线程。（notify / notifyAll）
+再次被唤醒时，该线程需要重新获得锁权限才能继续执行。
+
+当获取锁失败，或者自己放弃锁后，线程会被加入到当前对象的等待队列中去，等待被唤醒，也就是等待别的线程释放锁的时候，会唤醒该对象等待队列中的某一个或全部线程。（notify / notifyAll）
+
+## notify()
+
+唤醒当前对象上等待队列当中的线程。
+
+`notify()` 是唤醒等待队列中的任意一个线程，而 `notifyAll()` 是唤醒等待池中的所有线程。
 
 ### clone()
 
-Object.clone 方法会返回一个不同地址的新对象，但是其中的引用还是原来对象当中的引用。
+`clone()` 是 Object 类的一个方法 方法会返回一个不同地址的新对象，但是其中的引用还是原来对象当中的引用。
 
 属于浅克隆。
 
@@ -2154,11 +2168,177 @@ ext3(最大文件大小: 2TB，最大文件极限: 仅受文件系统大小限�
 
 # Spring
 
+## Bean 的生命周期
 
+一般来讲，Bean 是 Java 实例，当 new 创建的对象，当他没有任何引用的时候，就会被垃圾回收机制回收，而 Bean 在 Spring 框架当中回不回收由 Spring 说了算
+
+Bean 的生命周期有：实例化阶段、依赖注入阶段、初始化阶段、使用阶段、销毁阶段。
+
+1. 实例化阶段，在我理解，就是为对象分配空间，也就是 new 过程。
+2. 依赖注入过程，主要是在配置文档当中，需要对某些属性注入实例，这个时候会去从 IOC 当中获取实例，如果 IOC 当中没有这个 bean，便会触发这个 bean 的创建过程。
+3. 当注入完成后，需要完成初始化的工作，如果这个类实现了 InitializingBean 接口的 afterPropertiesSet 方法，或者在 xml 当中配置了 initMothed，就回去调用这两个方法，这个阶段可以让一些配置工作在这完成，让 Bean 成为一个可用的实例。
+4. Bean 的使用阶段，就是各种调用。
+5. 在销毁过程当中，如果这个类实现了 DisposableBean 接口的 destroy 方法，或者在 xml 当中配置了 destroy-method 方法，就会在容器准备移除这些 Bean 的时候，调用这两个方法，这个方法一般用来释放资源。
+
+## Bean 初始化过程
+
+第一步，继承配置文件信息
+
+通过 super 关键字，调用父类 AbstractApplicationContext 的初始化方法。在这个初始化方法当中，会执行两个过程，第一个过程，创建一个新的 AbstractApplicationContext，第二个过程，如果在构造方法当中传入了一个 ApplicationContext ，那么会把这个 ApplicationContext 当中的 Environment 合并到新的 AbstractApplicationContext 的 Enviroment 当中，Environment 当中存放了当前 ApplicationContext 的配置文件信息。
+
+第二步，定位 BeanDefinition
+
+传入的字符串会被 AbstractEnvironment 当中持有的 AbstractPropertyResolver 当中的 PropertyPlaceHolderHelper 逐一解析，并在 AbstractRefreshableConfigApplicationContext 当中被持有。
+
+这个Resource定位指的是BeanDifinition的资源定位，它由ResourceLoader通过统一的Resource接口来完成，这个Resource对各种形式的BeanDifinition的使用都提供了统一的接口。
+
+对于这些BeanDifinition的存在形式，相信大家都不会感到陌生。比如，
+
+在文件系统中的Bean定义信息可以使用FileSystemResource来进行抽象。
+
+在类路劲中的Bean定义信息可以使用ClassPathResource。
+
+这个定位过程类似于容器寻找数据的过程，就想水桶装水先要把水找到一样。
+
+第三步，载入与解析 BeanDefinition
+
+这个载入过程是把用户定义好的Bean表示成Ioc容器内部的数据结构，而这个容器内部的数据结构就是BeanDifinition。
+具体来说，BeanDifinition实际上就是POJO对象在IOC容器中的抽象，通过这个BeanDifinition定义的数据结构，使IOC容器能够方便的对POJO对象也就是Bean进行管理。
+
+整个过程通常发生在 refreshBeanFactory 方法当中，这个方法规定了 AbstractApplicationContext 的子类必须要实现配置文件的载入过程，在这个过程当中，
+通常会销毁以前的 BeanFactory 和 BeanFactory 当中的 Bean，然后创建一个新的 BeanFactory，并执行 loadBeanDefinitions 方法，在这个方法当中，通常会解析以 Resource 或者 String 类型表达的配置文件的所在位置。整个过程当中会通过把要解析的 Resource 放入到一个统一的 HashSet 当中，然后进行 IO 生成一个 Document 对象。接下来就是注册 Document 对象当中的 BeanDefinition 。
+
+第四步，注册
+
+这个操作是通过调用BeanDifinitionRegistry借口来实现的。这个注册过程把载入过程中解析得到的BeanDifinition向Ioc容器进行注册。
+在阅读源码中可知，在IOC容器内部将BeanDifinition注入到一个HashMap中去，Ioc容器就是通过这个HashMap来持有这些BeanDifinition数据的。
+
+初始化 ReaderContext 的时候，会把 DefaultLisableBeanFactory 当中坐 BeanDefinitionRegistry 注入进去，在后面调用 BeanDefinitionRegistry 的 registerBeanDefinition 方法的时候，就把 BeanDefinition 全部注入到 beanDefinitionMap 当中了。
+
+## IOC
+
+### 什么是  IOC
+
+即控制反转，是一种设计思想，在Java开发中，Ioc意味着将你设计好的对象交给容器控制，而不是传统的在你的对象内部直接控制。
+
+### 依赖注入的过程
+
+依赖注入的过程是用户第一次向 IOC 容器索要 Bean 的时候发生的，有特殊情况，也就是在 BeanDefinition 信息当中通过控制 lazy-init 属性来让容器完成对 bean 的预示例化
+
+依赖注入主要有两个过程，一是 bean 示例化，二是依赖解析与注入
+
+在createBeanInstance方法中，根据指定的初始化策略，使用静态工厂、工厂方法或者容器的自动装配特性生成 java 实例对象
+
+然后接下来首先对属性进行解析，如果属性类型不转换，那么直接准备依赖注入，然后通过调用 BeanWrapper 当中的方法来完成依赖注入
+
+在创建和对象依赖注入的时候，都是依据 BeanDefinition 的信息来递归调用完成的，第一个在上下文体系当中查找是否有需要的 Bean 和创建 Bean的递归调用，第二个是通过递归调用容器的 getBean 方法获得当前 bean 依赖的 bean，同时也触发对依赖 Bean 的创建和注入过程
+
+## AOP
+
+### 什么是 AOP
+
+AOP 是一种模块化机制，把业务程序当中一些可以被大部分业务复用或者与业务无关的处理流程抽取出来，形成一个单独的方法，
+这样使得在业务代码当中不包含特定领域问题的调用。
+然后把这样的业务逻辑和特定领域问题通过切面来封装和维护。这样就可以把原本分散在整个应用程序当中的变动就可以更好的被管理起来
+
+### 动态代理
+
+动态代理类的源码是在程序运行期间由JVM根据反射等机制动态的生成，所以不存在代理类的字节码文件。代理类和委托类的关系是在程序运行时确定。
+
+### 静态代理
+
+所谓静态也就是在程序运行前就已经存在代理类的字节码文件，代理类和委托类的关系在运行前就确定了。
+
+### Spring AOP 的实现
+
+生成 AOP 代理类，是从 ProxyFactoryBean getObject 方法中开始的
+
+第一步，getObject 当中首先调用 initializeAdvisorChain 方法，对通知器进行初始化，为代理对象的生成做好准备
+
+在 initializeAdvisorChain 方法当中，只会初始化一次，初始化过后不会再初始化。
+
+完成通知器链后，从 IOC 容器当中获取到通知器，然后把取得通知器加入到拦截链当中，这个过程在 addAdvisorOnChainCreation 方法中实现
+
+第二步，需要对 singletion 与 prototype 的 bean 做分别的初始化工作
+
+在这个过程当中，ProxyFactoryBean 会去读配置，例如代理的方法调用的接口等等，为生成代理对象做准备，然后把创建具体代理对象的过程交给 AopProxy 来完成
+
+AopProxy 有两个子类，一个是 JdkDynamicProxy 一个是 Cglib2AopProxy，这个两个子类分别用 JDK 和 CGLIB 来生成代理对象
+
+具体的代理过程是 ProxyFactoryBean 的基类 AdvisedSupport 当中获取 AopProxyFactory 根据 AdvisedSupport 当中封装的信息来创建 AopProxy 来实现的，所以在整个过程当中 ProxyFactoryBean 充当 AopProxy 与 IOC 容器之间的桥梁，为 AopProxy 提供数据支持
+
+在生成 AOP 代理对象的过程当中，如果代理是接口类的实现就使用 jdk 方式生成，否则使用 CGLIB。因为 jdk 只能代理接口类的实现，所以需要引入 CGLIB 代理方式，但是 CGLIB 需要引入 ASM 包，便选择两种代理方式结合
+
+对 jdk 与 CGLIB 具体技术的使用，和实现层次的代理对象的生成，都是 spring 封装在 JdkDynamicAopProxy 与 CglibProxyFactory 当中的
+
+## 事务
+
+### 什么是 Spring 事务
+
+事务Transaction，它是一些列严密操作动作，要么都操作完成，要么都回滚撤销。Spring事务管理基于底层数据库本身的事务处理机制。
+
+### 如何实现
+
+（1）编程式事务管理对基于 POJO 的应用来说是唯一选择。我们需要在代码中调用beginTransaction()、commit()、rollback()等事务管理相关的方法，这就是编程式事务管理。
+
+（2）基于 TransactionProxyFactoryBean的声明式事务管理
+
+（3）基于 @Transactional 的声明式事务管理
+
+（4）基于Aspectj AOP配置事务
+
+### 事务传播性
+
+事务传播行为就是多个事务方法调用时，如何定义方法间事务的传播。Spring定义了7中传播行为：
+
+（1）propagation_requierd：如果当前没有事务，就新建一个事务，如果已存在一个事务中，加入到这个事务中，这是Spring默认的选择。
+
+（2）propagation_supports：支持当前事务，如果没有当前事务，就以非事务方法执行。
+
+（3）propagation_mandatory：使用当前事务，如果没有当前事务，就抛出异常。
+
+（4）propagation_required_new：新建事务，如果当前存在事务，把当前事务挂起。
+
+（5）propagation_not_supported：以非事务方式执行操作，如果当前存在事务，就把当前事务挂起。
+
+（6）propagation_never：以非事务方式执行操作，如果当前事务存在则抛出异常。
+
+（7）propagation_nested：如果当前存在事务，则在嵌套事务内执行。如果当前没有事务，则执行与propagation_required类似的操作。
 
 # MyBatis
 
+## MyBatis 工作流程
 
+1. 加载配置文件，会加载全局配置文件、Sql映射文件
+2. 创建 SessionFactory ，然后用 SessionFactory 来读取配置文件当中的内容
+3. 创建 Session，Session 会在 SessionFactory 当中被创建，Session 是一个接口，包含了对数据的基本操作
+4. 创建 Executor，Executor 帮助 Session 来执行 Sql 代码
+5. 封装 Sql 对象，Executor 把要处理的 Sql 信息装到 MappedStatemen 对象当中，这里面有 Sql 、参数、结果信息
+6. 把 Sql 对向提交并且执行
+
+## Statement 与 PrepareStatement 区别
+
+动态参数：PrepareStatement 支持动态参数的传入，但是 Statement 不支持动态参数的传入
+
+编码：PrepareStatement 可以避免如单引号的编码麻烦，Statement 不可以
+
+预编译：PrepareStatement 支持预编译，而 Statement 不支持
+
+出错是否便于查找：PrepareStatement 的高级特性决定如果 Sql 不容易查出来，但是 Statement 容易查
+
+安全：PrepareStatement 可以防止 Sql 注入，而 Statement 不可以
+
+## 什么是 SQL 注入
+
+Sql 注入指的是通过无参数的拼接来查找数据库当中的数据
+
+例如查找的 sql 语句为
+
+```java
+String sql = "select * from user where name = " + username;
+```
+
+username 是从前段页面传入的，如果 `username ="or 1=1";`，那么就会获取数据库的大部分数据
 
 # 操作系统
 
@@ -2788,6 +2968,107 @@ public void sendPong(ByteBuffer applicationData) throws IOException,IllegalArgum
 4. Java WebSocket API 可以保证消息以片段的方式发送时
 
 # 系统架构
+
+## CAP 理论
+
+ 它是一个经典的分布式系统理论。CAP 理论告诉我们 : 一个分布式系统不可能同时满足一致性(C:Consistency)、可用性(A:Availability)及分区容忍性(P:Partition tolerance) 这三个基本要求，最多只能同时满足其中两项。
+
+- 一致性(C): 在分布式系统中的所有数据备份，在同一时刻是否同样的值。（等同于所有节点访问同一份最新的数据副本）
+
+- 可用性(A): 在集群中一部分节点故障后，集群整体是否还能响应客户端的读写请求，也指好的响应性能，完全的可用性指的是在任何故障模型下，服务都会在有限的时间处理响应   
+
+- 分区容忍性(P): 在网络分区的情况下，被分隔的节点仍能正常对外服务，简单可理解为“可靠性”（两个系统外界看来就是整体，如果系统不能通信了，成为分区。 如果不能保证分区容错性，则节点不能正常服务，不能服务就谈不上什么事务了，所以分区容错性是肯定要保证的）
+
+## CAP 选择
+
+- CA	    放弃分区容忍性，加强一致性和可用性。
+
+- AP	    放弃一致性（这里说的一致性是强一致性），追求分区容忍性和可用性。
+
+- CP	    放弃可用性，追求一致性和分区容忍性。
+
+## BASE 理论
+
+BASE理论是对CAP中的一致性和可用性进行一个权衡的结果，理论的核心思想就是：我们无法做到强一致，但每个应用都可以根据自身的业务特点，采用适当的方式来使系统达到最终一致性（Eventual consistency）。
+
+在分布式系统中，我们往往追求的是可用性，它的重要程序比一致性要高，它是用来对CAP定理进行进一步扩充的。BASE理论指的是：
+
+- Basically Available（基本可用） 基本可用是指分布式系统在出现不可预知故障的时候，允许损失部分可用性----注意，这绝不等价于系统不可用。
+
+- Soft state（软状态）软状态指允许系统中的数据存在中间状态，并认为该中间状态的存在不会影响系统的整体可用性，即允许系统在不同节点的数据副本之间进行数据同步的过程存在延时
+
+- Eventually consistent（最终一致性）最终一致性强调的是所有的数据副本，在经过一段时间的同步之后，最终都能够达到一个一致的状态。
+
+## 分布式环境中的并发问题
+
+1. 避免集群内部并发
+
+  避免在集群内部并发，因为集群内部的并发就会导致大量资源浪费，比如要做各种锁，但是如果真的设计到并发的话，可以根据业务，把并发计算的数据缩小到最小的粒度，
+  然后在一个应用程度当中并行执行。例如，如果客户的数据之间是相互隔离的，那么我们就可以把同一个用户程序放在一个程序上运算，不同的用户数据可以在不同的应用程序上计算
+
+2. 时间戳
+
+  分布式环境中并发是没法保证时序的，无论是通过远程接口的同步调用或异步消息，因此很容易造成某些对时序性有要求的业务在高并发时产生错误。
+  比如系统A需要把某个值的变更同步到系统B，由于通知的时序问题会导致一个过期的值覆盖了有效值。对于这个问题，常用的办法就是采用时间戳的方式
+
+3. 串行化
+
+  有的时候可以通过串行化可能产生并发问题操作，牺牲性能和扩展性，来满足对数据一致性的要求。比如分布式消息系统就没法保证消息的有序性，
+  但可以通过变分布式消息系统为一个消息系统就可以保证消息的有序性了。
+
+4. 数据库
+
+  分布式环境中的共享资源不能通过 Java 里同步方法或加锁来保证线程安全，但数据库是分布式各服务器的共享点，可以通过数据库的高可靠一致性机制来满足需求。
+
+5. 行锁
+
+  有的事务比较复杂，无法通过一条sql解决问题，并且有存在并发问题，这时就需要通过行锁来解决，一般行锁可以通过以下方式来实现：
+
+  - 对于Oracle数据库，可以采用select ... for update方式。这种方式会有潜在的危险，就是如果没有commit就会造成这行数据被锁住，其他有涉及到这行数据的任务都会被挂起，应该谨慎使用
+
+  - 在表里添加一个标示锁的字段，每次操作前，先通过update这个锁字段来完成类似竞争锁的操作，操作完成后在update锁字段复位，标示已归还锁。
+    这种方式比较安全，不好的地方在于这些update锁字段的操作就是额外的性能消耗
+
+## 分布式锁
+
+### 基于数据库
+
+要实现分布式锁，最简单的方式可能就是直接创建一张锁表，然后通过操作该表中的数据来实现了。
+
+当我们要锁住某个方法或资源时，我们就在该表中增加一条记录，想要释放锁的时候就删除这条记录。
+
+比如有这样一个方法 `public void swap(int a, int b)`，在数据库当中会建立这样一个这样的表
+
+```sql
+create table method(
+  `id` int(11) not null auto_increament comment '主键',
+  `methond_name` varchar(64) not null comment '方法名'，
+  'des' varchar(255) not null comment `参数`，
+  `update_time` timestamp not null default current_timstamp on update conccuren_timestamp comment `保存数据的时间，自动生成的`
+  primary key(id),
+  unique key `uidx_method_name` (`method_name`) using btree
+) engine=innodb default charset=utf8 comment `锁定中的方法`
+
+```
+
+当我们调用一个方法的时候，就执行下面的语句
+
+```sql
+insert into method(method_name, des) values (method_name, des);
+```
+
+当我们释放锁的时候，就会执行下面的语句
+
+```sql
+delete from methd where method_name='method_name';
+```
+
+- 局限性
+
+1. 这把锁强依赖数据库的可用性，数据库是一个单点，一旦数据库挂掉，会导致业务系统不可用。(搞两个数据库，数据之前双向同步。一旦挂掉快速切换到备库上)
+2. 这把锁没有失效时间，一旦解锁操作失败，就会导致锁记录一直在数据库中，其他线程无法再获得到锁。(只要做一个定时任务，每隔一定时间把数据库中的超时数据清理一遍。)
+3. 这把锁只能是非阻塞的，因为数据的insert操作，一旦插入失败就会直接报错。没有获得锁的线程并不会进入排队队列，要想再次获得锁就要再次触发获得锁操作。(搞一个while循环，直到insert成功再返回成功。)
+4. 这把锁是非重入的，同一个线程在没有释放锁之前无法再次获得该锁。因为数据中数据已经存在了。(在数据库表中加个字段，记录当前获得锁的机器的主机信息和线程信息，那么下次再获取锁的时候先查询数据库，如果当前机器的主机信息和线程信息在数据库可以查到的话，直接把锁分配给他就可以了。)
 
 
 
