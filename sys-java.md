@@ -155,11 +155,11 @@ HashMap 是懒加载模式，在第一次插入时会触发扩容。
 2. 如果table不为空， 需要重新计算table的长度， newLength = oldLength << 1(注， 如果原oldLength已经到了上限， 则newLength = oldLength)；
 3. 遍历oldTable；
 4. 首节点为空， 本次循环结束;
-5. 无后续节点， 重新计算 hash 位， 本次循环结束；
+5. 当前节点无后续节点， 重新计算 hash 位， 本次循环结束；
 6. 当前是红黑树， 走红黑树的重定位；
-7. 当前是链表， JAVA7时还需要重新计算hash位， 但是JAVA8做了优化， 通过(e.hash & oldCap) == 0来判断是否需要移位; 如果为真则在原位不动， 否则则需要移动到当前hash槽位 + oldCap的位置;
+7. 当前是链表， JAVA 7 时还需要重新计算 hash 位， 但是 JAVA 8 做了优化， 通过 `(e.hash & oldCap) == 0` 来判断是否需要移位; 如果为真则在原位不动， 否则则需要移动到当前 `hash槽位 + oldCap` 的位置;
 
-*散列冲突寻找新的桶位置的原理如下*：
+散列冲突寻找新的桶位置的原理其实就是检测在新的长度下，最高位是否参与了最高位的计算，如果参与了计算那么就调整位置为一个循环，具体如下：
 
 ```
 // 原理
@@ -199,7 +199,7 @@ HashMap 是懒加载模式，在第一次插入时会触发扩容。
 
 #### Hash 计算桶位置
 
-hash 一般用来计算桶的位置，通过 `hash % table.length - 1` 的方式得到桶位置
+hash 一般用来计算桶的位置，通过 `hash % table.length - 1` 的方式得到桶位置。
 
 ```
     static final int hash(Object key) {
@@ -220,24 +220,28 @@ hash 一般用来计算桶的位置，通过 `hash % table.length - 1` 的方式
 
 当 Key 为自定义类时，需要重写 Key 的 `equals()` 方法与 `hashCode()` 方法。
 
-HashMap 中的比较 key 是这样的：先求出 key 的`hashCode()`，比较其值是否相等，若相等再比较`equals()`，若 `equals()`相等则认为他们是相等的；若`equals()`不相等则认为他们不相等。
- 如果只重写 `hashcode() ` 不重写 `equals()` 方法，当比较 `equals()` 时只是看他们是否为同一对象（即进行内存地址的比较），所以必定要两个方法一起重写。
+> HashMap 中的比较 key 是这样的：先求出 key 的`hashCode()`，比较其值是否相等，若相等再比较`equals()`，若 `equals()`相等则认为他们是相等的；若`equals()`不相等则认为他们不相等。
+>
+>  如果只重写 `hashcode() ` 不重写 `equals()` 方法，当比较 `equals()` 时只是看他们是否为同一对象（即进行内存地址的比较），所以必定要两个方法一起重写。
 
 #### 如何让 HashMap 散列更均匀
 
-当容量为 2 的幂次方的时候，由于做 hash 找 index 的过程是 length-1 所以，偶数 - 1 变成奇数，基数当中的二进制最后一位是 1 ，这样就可以充分利用到 hashcode 当中的最后一位，从而散列的均匀一点。
+设置容量为 2 的幂次方。
 
-对应在 HashMap 当中，则是计算 Key 的桶位置时，使用的是 Key 的 `hashCode()` 与 `table.length - 1` 来计算桶位置。
+当容量为 2 的幂次方的时候，由于做 hash 找 index 的过程是 length-1， 而 2 的幂次方 -1 时得到的二进制码所有的位数都为 1，在计算 key 的时候就可以充分利用到 key 的 hash 的二进制码的所有位数，从而散列的均匀一点。
+
+> 对应在 HashMap 当中，则是计算 Key 的桶位置时，使用的是 Key 的 `hashCode()` 与 `table.length - 1` 来计算桶位置。
+>
 
 #### 为什么 HashMap 中 table 长度要为 2 的幂次方
 
-默认的初始容量为 `1<< 4 (16)`，当容量一定是 2^n 的时候，那么末尾一定是 1，这个时候 `h & (length - 1) == h % length`，而按位运算会很快
+默认的初始容量为 `1<< 4 (16)`，当容量一定是 2^n 的时候，`length - 1` 得到的二进制上所有的位数都为 1， `h & (length - 1) == h % length` ，而按位运算会很快，散列更均匀。
 
 #### HashMap 的负载因子是多少
 
-在 Java Doc 注释里面有写，通常，HashMap 的 `load factory` 为 **0.75** 便可以在 **时间** 和 **空间** 上有一个较好的平衡。
+HashMap 的 `load factory` 默认为为 **0.75**。
 
-太低的  `load factory` 会导致 HashMap 频繁的执行 `resize()` 方法来重新分配 table 空间；太高的  `load factory` 可以降低空间消耗，但是会增大查找的花费，因为较高的值如果初识数量大于负载因子所限制的最大条目数，那么就不会发生 `rehash` 操作。
+0.75 可以保证 HashMap 在 **时间** 和 **空间** 上有一个较好的平衡。太低的  `load factory` 会导致 HashMap 频繁的执行 `resize()` 方法来重新分配 table 空间；太高的  `load factory` 可以降低空间消耗，因为较高的值如果初识数量大于负载因子所限制的最大条目数，那么就不会发生 `resize` 操作，每个链表或者树上的节点就会变多，导致查找的开销增加。
 
 #### fast-fail 策略
 
@@ -245,19 +249,20 @@ HashMap 中的比较 key 是这样的：先求出 key 的`hashCode()`，比较�
 
 #### HashMap 的死循环
 
-HashMap 的死循环出现在并发环境下执行 `resize` 方法，当并发加入 put 的时候，引起扩容操作，然后多线程导致 HashMap 的 Entry 链表形成环形数据结构，查找时候会引起死循环/
+HashMap 的死循环出现在并发环境下执行 `resize` 方法，当并发加入 put 的时候，引起扩容操作，然后多线程导致 HashMap 的 Entry 链表形成环形数据结构，查找时候会引起死循环。
 
-具体的过程如下：
-
-当有一个线程刚进入 get 方法的时候执行 `Entry next = e.next()` 方法后被挂起，然后新线程进入，并执行了扩容的操作，如果新的扩容后的链表的位置发生了反转，那么这个时候环形就形成了。
-
-假如有两个线程 P1、P2，以及链表 `a->b->null`：
-
-1. P1先执行，执行完`Entry<K，V> next = e.next;`代码后发生阻塞，或者其他情况不再执行下去，此时 `e=a，next=b`；
-
-2. 而P2已经执行完整段代码，于是当前的新链表 `newTable[i] 为 b->a->null`；
-
-3. P1又继续执行`Entry<K，V> next = e.next;`之后的代码，则执行完`e=next;`后，`newTable[i]`为`a<=>b`，则造成回路，`while(e!=null)`一直死循环；
+> 具体的过程如下：
+>
+> 当有一个线程刚进入 get 方法的时候执行 `Entry next = e.next()` 方法后被挂起，然后新线程进入，并执行了扩容的操作，如果新的扩容后的链表的位置发生了反转，那么这个时候环形就形成了。
+>
+> 假如有两个线程 P1、P2，以及链表 `a->b->null`：
+>
+> 1. P1先执行，执行完`Entry<K，V> next = e.next;`代码后发生阻塞，或者其他情况不再执行下去，此时 `e=a，next=b`；
+>
+> 2. 而P2已经执行完整段代码，于是当前的新链表 `newTable[i] 为 b->a->null`；
+>
+> 3. P1又继续执行`Entry<K，V> next = e.next;`之后的代码，则执行完`e=next;`后，`newTable[i]`为`a<=>b`，则造成回路，`while(e!=null)`一直死循环；
+>
 
 #### HashMap 与 HashTable 区别
 
@@ -273,7 +278,9 @@ HashMap 的死循环出现在并发环境下执行 `resize` 方法，当并发�
 
 #### HashMap 与 TreeMap 的区别
 
-1. HashMap 不保证顺序；TreeMap 能根据键来排序，默认是升序排序，Iterator 遍历 TreeMap 得到的有序的结果；
+1. HashMap 不保证顺序；TreeMap 能根据键来排序；
+
+> TreeMap 默认用 Key 来升序排序，Iterator 遍历 TreeMap 得到的有序的结果。
 
 #### 让 HashMap 同步
 
@@ -293,21 +300,26 @@ Map m = Collections.synchronizeMap(hashMap);
 
 - 1.8 之后
 
-  ConcurrentHashMap 当中维护了一个 Node 数组 + 链表/红黑树，Node 当中有 final 的 key 与 volatile 的 value 与 next。并发的方式改成了 synchronized 关键字控制。
+  ConcurrentHashMap 当中维护了一个 Node 数组 + 链表/红黑树，Node 当中有 final 与 volatile 修饰的 value 数组。并发的方式改成了 synchronized 关键字控制。
 
-在 ConcurrentHashMap 当中使用 volatile 关键来保证读取到工作内存当中的 table 都是最新的，所以 volatile 只会保证读取的时候数据是准确的。
-
-在 ConcurrentHashMap 当中，如果要保证写入的时候操作是线程安全的话，那么还是需要 synchronized 来做线程同步操作。
+> 在 ConcurrentHashMap 当中使用 volatile 关键来保证读取到工作内存当中的 table 都是最新的，所以 volatile 只会保证读取的时候数据是准确的。
+>
+> 在 ConcurrentHashMap 当中，如果要保证写入的时候操作是线程安全的话，那么还是需要 synchronized 来做线程同步操作。
+>
 
 #### ConcurrentHashMap 如何保证线程安全
 
 ConcurrentHashMap 当中保证线程的安全性主要是通过 volatie、CAS、Synchronized 三个措施来保障线程安全性的。
 
-其中 volatile 主要用来保证**读**的线程安全性。
+##### 读安全
 
-在 ConcurrentHashMap 当中，用 volattile 来修饰 Node 数组，这样就保证了如果有一个线程修改了 Node 数组当中的数据，那么就会使读线程当中的 Node 数组无效，然后读线程就会重新在主内存当中去加载 Node 数组的数据到线程当中。
+主要依靠 volatile 关键字。
 
-对于**写**操作的线程安全性的措施主要是依靠 CAS 与 Synchronized 关键在实现的。
+在 ConcurrentHashMap 当中，用 volattile 来修饰 Node 数组，这样就保证了如果有一个线程修改了 Node 数组当中的数据，那么就会使读线程当中的 Node 数组无效，然后读线程就会重新在主内存当中去加载 Node 数组。
+
+##### 写安全
+
+主要依靠 CAS 与 Synchronized 关键字。
 
 写操作主要涉及到如下几个步骤：
 
@@ -316,15 +328,15 @@ ConcurrentHashMap 当中保证线程的安全性主要是通过 volatie、CAS、
 3. 插入 Node 结点（CAS）；
 4. 插入 Node 到链表当中去（加锁 Synchronized）；
 
-其中，如果是插入 Node 节点时，由于插入结点这个操作不会对其它的数据有影响，所以就可以用 CAS 来替代锁住整个 Node 结点数组这个过程，所以在并发的时候如果有必要加锁，那么数组的其它 Node 结点同样是可以访问的，也就提高了并发量。
+其中，如果是插入 Node 节点时，由于插入结点这个操作不会对其它的数据有影响，所以就可以用 CAS 来替代锁住整个 Node 结点数组的过程，所以在并发的时候数组的其它 Node 节点同样是可以访问的，也就提高了并发量。
 
 对于插入 Node 结点到链表或者树当中去这个操作，就需要获取锁来进行操作。
 
-在 ConcurrentHashMap 的注释当中有这样一句话：ConcurrentHahsMap 的查询操作只会保证获取到线程上的某一个时间的状态，而不会获取到最新的状态，这也就是说 ConcurrentHashMap 本身是没有采用读写锁，而在做更新操作的时候，根据更新的位置的不同来判断所采用的更新方式，通常情况下不会对 Node 数组加锁，那么也就不会对大部分的读操作有锁定的影响，会提升性能。
-
-通过上面的这个两个过程就能保证 ConcurrentHashMap 在写的时候的线程安全性。
+ConcurrentHahsMap 的查询操作只会保证获取到线程上的某一个时间的状态，而不会获取到最新的状态。这也就是说 ConcurrentHashMap 本身是没有采用读写锁，而在做更新操作的时候，根据更新的位置的不同来使用不同的并发处理方式，通常情况下不会对 Node 数组加锁，那么也就不会对大部分的读操作有锁定的影响，可以提升性能。
 
 #### put() 方法
+
+`put() ` 方法可向 ConcurrentHashMap 当中添加一个元素，或替换已经存在的元素，添加的元素不允许为 null。
 
 ConcurrentHashMap 的更新操作与 HashMap 也大致相同，但其中采用了 CAS 更新方法、synchronized 关键字来同步线程。
 
@@ -332,55 +344,91 @@ ConcurrentHashMap 执行更新操作分作两种情况，一是当前插入的�
 
 如果插入的地方是一个空节点，那么利用 CAS 原理，把元素插入。
 
-如果插入的地方已经存在一个元素，那么就要先获取这个元素的锁，获取锁之前，要先检查是否有其它线程在扩容，那么有，则会完成扩容操作，然后获取这个结点的锁，从头开始遍历这个结点，遇到 hash 相同的就替换，否则末尾插入。
+如果插入的地方已经存在一个元素，那么就要先获取这个元素所在的链表与树的锁，获取锁之前，要先检查是否有其它线程在扩容，那么有，则会完成扩容操作，然后获取这个结点的锁，从头开始遍历这个结点，遇到 hash 相同的就替换，否则末尾插入。
 
 最后检查是否需要扩容或者转成树。
 
 #### get() 方法
 
+`get()` 方法用来获取 ConcurrentHashMap 当中的某一个元素。
+
 ConcurrentHashMap 的查找过程与 HashMap 大致相同。但是在获取的时候有两个关键的地方，一是被 volatile 关键字修饰的 table，二是 tabAt 方法。
 
 ConcurrentHashMap 的底层 table 是被 volatile 修饰的，也就是说，每一次要去使用 table 的时候，如果有别的线程修改了 table，那么当前线程的 table 缓存就会失效，然后去内存的当中重新获取 table 元素，保证了 table 是某一个时刻上面最新的。
 
-然后计算桶位置，在 table 上面获取节点，这个时候 tabAt 方法调用了 Unsafe 类当中的 getObjectVolatile 方法，这个方法是拥有 volatile 语意的，保持原子操作的情况下，去内存当中根据对象地址和内存地址的偏移量直接获取对象，也保证了该对象在某一时刻的最新性。
+然后计算桶位置，在 table 上面获取节点，这个时候 tabAt 方法调用了 Unsafe 类当中的 getObjectVolatile 方法，这个方法是拥有 volatile 语意的，可以以原子操作的模式，去内存当中根据对象地址和内存地址的偏移量直接获取对象，也保证了该对象在某一时刻的最新性。
 
 然后获取到链表的头结点后，按照访问链表的方式来遍历链表，并且不需要加锁。
 
 #### 为什么 ConcurrentHashMap 的参数都不能为空
 
 ConcurrentHashmap 和 Hashtable 都是支持并发的，这样会有一个问题，当你通过 `get(k)`获取对应的 value 时，如果获取到的是 null 时，你无法判断，它是 `put（k，v）` 的时候 value 为 `null`，还是这个 key 从来没有做过映射。
-HashMap是非并发的，可以通过 `contains(key)` 来做这个判断。而支持并发的 Map 在调用 `m.contains(key)和 `m.get(key)` ，由于读取未上锁，m 可能已经不同了。
+HashMap是非并发的，可以通过 `contains(key)` 来做这个判断。而支持并发的 Map 在调用 `m.contains(key)` 和 `m.get(key)` ，由于读取未上锁，m 可能已经不同了。
 
 #### ConcurrentHashMap 的特殊点
 
 1. ConcurrentHashMap 是一个类似于 HashTable 的线程安全的 HashMap，它遵循了 HashTable 的功能规范，含有 HashTable 当中每个方法的方法版本，但是与 HashTable 同步的细节不相同；
 2. 在访问 ConcurrentHashMap 的哈希表的时候，所有的操作都是要求是线程安全的，但是检索操作通常是不需要的，并且使用方法的所有参数都不能为空，也不允许存在空的 key 与 value；
-3. 它的状态查询方法例如：isEmpty()、size 都是反应某一个时刻的状态，其创建的迭代器也只是某一时刻所包含的键值对，并且只能被一个线程持有，而且不会有 ConcurrentModificationException；
+3. 它的状态查询方法例如：`isEmpty()`、`size()` 都是反应某一个时刻的状态，其创建的迭代器也只是某一时刻所包含的键值对，并且只能被一个线程持有，而且不会有 ConcurrentModificationException；
 4. ConcurrentHashMap 的 table 初始化发生在第一次插入的操作时候。
 
 ### ArrayList
 
-1. ArrayList 本质上是一个可改变大小的数组。当元素加入时，其大小将会动态地增长。
+#### 数据结构
 
-2. 内部的元素可以直接通过 `get()` 与 `set()` 方法进行访问，随机访问很快。
+内部是一个可改变大小的数组。当元素加入时，其大小将会动态地增长。
 
-3. 删除非头尾元素慢，新增元素慢。由于需要预留一部分空间用于后续元素的插入所以也相对比较浪费空间，较适用于无频繁增删的情况。
+#### 访问特征
 
-4. ArrayList 非线程安全。
-5. 一直在末尾添加元素是，ArrayList 效率比 LinkedList 效率更高，ArrayList 虽然可能需要扩容，但是它的平均插入应该是 O(1)；LinkedList 在插入链表末尾的时候，不需要扩容，但是它的插入末尾需要移动指针到末尾，所以它的效率是 O(n)。
+内部的元素可以直接通过 `get()` 与 `set()` 方法进行随机访问，速度很快。
+
+#### 插入删除特征
+
+插入时需要挪动元素位置，删除非头尾元素慢，新增元素慢。
+
+由于需要预留一部分空间用于后续元素的插入，所以也相对比较浪费空间，较适用于无频繁增删的情况。
+
+一直在末尾添加元素是，ArrayList 效率比 LinkedList 效率更高，ArrayList 虽然可能需要扩容，但是它的平均插入应该是 O(1)；LinkedList 在插入链表末尾的时候，不需要扩容，但是它的插入末尾需要移动指针到末尾，所以它的效率是 O(n)。
+
+#### 线程安全
+
+ArrayList 非线程安全。
 
 ### LinkedList
 
-1. LinkedList 是一个链表，在添加和删除元素时具有比 ArrayList 更好的性能。
-2. 但在 `get()` 与 `set()` 方面弱于 ArrayList。
-3. 适用于：没有大规模的随机读取，有大量的增加/删除操作。随机访问很慢，增删操作很快，不耗费多余资源。
-4. 允许null元素。
-5. 非线程安全。
+#### 数据结构
+
+LinkedList 是一个链表，在添加和删除元素时具有比 ArrayList 更好的性能。
+
+#### 访问特侦
+
+访问时只能通过头节点依次遍历，在 `get()` 与 `set()` 方面弱于 ArrayList。
+
+#### 插入特征
+
+插入时只需要修改链表指针，不需要挪动位置。
+
+适用于没有大规模的随机读取，有大量的增加/删除操作。随机访问很慢，增删操作很快，不耗费多余资源。
+
+允许null元素。
+
+#### 线程安全
+
+非线程安全。
 
 ### Vector
 
-1. Vector 类似于 ArrayList，底层是数组，但其是同步的，开销就比 ArrayList 要大。
-2. Vector 和 ArrayList 在更多元素添加进来时会请求更大的空间。Vector 每次请求其大小的双倍空间，而 ArrayList 每次对 size 增长 50%。
+#### 数据结构
+
+Vector 类似于 ArrayList，底层是数组，但其是同步的，开销就比 ArrayList 要大。
+
+#### 插入特征
+
+Vector 和 ArrayList 在更多元素添加进来时会请求更大的空间。Vector 每次请求其大小的双倍空间，而 ArrayList 每次对 size 增长 50%。
+
+#### 并发安全
+
+使用 synchronized 保证并发安全。
 
 ## 并发
 
@@ -1818,10 +1866,12 @@ MyISAM 认为 **写操作** 比 **读操作** 更加重要
 
 ###### MyISAM 表级锁兼容性
 
-    //是否兼容
-         | None | 读锁  | 写锁  |
-    读锁  |  是   |  是  |  否  |
-    写锁  |  是   |  否  |  否  |
+```
+//是否兼容
+     | None | 读锁  | 写锁  |
+读锁  |  是   |  是  |  否  |
+写锁  |  是   |  否  |  否  |
+```
 ###### InnoDB 锁支持
 
 InnoDB 支持 **行级锁** **表级锁** ， 但是 **行级锁** 是默认采用的
@@ -3605,7 +3655,9 @@ public class SelectionSort {
 
 #### 时间复杂度
 
-    O( n2 )
+```
+O( n2 )
+```
 
 #### 空间复杂度
 
