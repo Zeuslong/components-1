@@ -680,47 +680,37 @@ Selector 会反复的对数据进行轮询，当 Channel 所感兴趣的事情�
 
 #### Channel
 
-Channel 叫做管道，向 Buffer 当中写入数据，或者读取数据
+Channel 叫做管道，向 Buffer 当中写入数据，或者读取数据。
 
-- FileChannel
-
-文件的数据读写
-
-- DatagramChannel
-
-UDP 数据的读写
-
-- SocketChannel
-
-TCP 数据的读写
-
-- ServerSocketChannel
-
-允许我们监听TCP链接请求，每个请求会创建会一个SocketChannel
+> FileChannel：文件的数据读写
+>
+> DatagramChannel：UDP 数据的读写
+>
+> SocketChannel：TCP 数据的读写
+>
+> ServerSocketChannel：允许我们监听TCP链接请求，每个请求会创建会一个SocketChannel
 
 #### Buffer
 
-缓存区，主要是暂时保存 Channel 写入的数据，也是让 Channel 读取数据的地方
+缓存区，主要是暂时保存 Channel 写入的数据，也是让 Channel 读取数据的地方。
 
-利用Buffer读写数据，通常遵循四个步骤：
-
-```java
-    把数据写入buffer；
-    调用flip；
-    从Buffer中读取数据；
-    调用buffer.clear()或者buffer.compact()
-```
-
-具体的实现：
-
-- ByteBuffer
-- MappedByteBuffer
-- CharBuffer
-- DoubleBuffer
-- FloatBuffer
-- IntBuffer
-- LongBuffer
-- ShortBuffer
+> 利用Buffer读写数据，通常遵循四个步骤：
+>
+> 1. 把数据写入buffer；
+> 2. 调用flip；
+> 3. 从Buffer中读取数据；
+> 4. 调用buffer.clear()或者buffer.compact()
+>
+> 具体的实现：
+>
+> - ByteBuffer
+> - MappedByteBuffer
+> - CharBuffer
+> - DoubleBuffer
+> - FloatBuffer
+> - IntBuffer
+> - LongBuffer
+> - ShortBuffer
 
 #### Selector
 
@@ -730,7 +720,8 @@ TCP 数据的读写
 
 FileChannel 是 Java NIO 类库当中处理文件数据的一个抽象类，虽然是 NIO 类库当中的一员，但是 FileChannel 在读取与写入数据的时候，依旧是阻塞的，也就是说在 FileChannel 在读入数据的时候，还是要等到数据进入到操作系统内核内存，然后再从内核读入进程内存，然后才可以开始操作。
 
-但是个人认为 FileChannel 的出现对于 Java IO 体系来讲并不是多余的。网上流传的 NIO 有很多种含义：1.Non-blocking IO。2.New IO。第一种含义意思是非阻塞的 IO，也就是当我们执行其中的某些方法的时候，当方法没有执行完毕的时候，原本是应该被阻塞的，但是在非阻塞的 IO 方式当中，就算没有执行完毕，也是可以直接返回的。第二种含义的意思是一种新的 IO 思维，NIO 所有的 IO 类后都有一个后缀叫做 Channel，Channel 译过来是通道的意思，这一种含义更贴近 FileChannel 的设计理念，FileChannel 是一个双向操作的 IO 流，传入对应的文件路径并且打开 FileChannel 之后既可以执行读操作也可以执行写操作，在这样的工作机制下，当我们需要对文件进行操作的时候，只需要打开对应文件的 FileChannel，再申请一个 Buffer 就可以直接操作，不用关心读取的时候的一些细节的控制。
+> 但是个人认为 FileChannel 的出现对于 Java IO 体系来讲并不是多余的。网上流传的 NIO 有很多种含义：1.Non-blocking IO。2.New IO。第一种含义意思是非阻塞的 IO，也就是当我们执行其中的某些方法的时候，当方法没有执行完毕的时候，原本是应该被阻塞的，但是在非阻塞的 IO 方式当中，就算没有执行完毕，也是可以直接返回的。第二种含义的意思是一种新的 IO 思维，NIO 所有的 IO 类后都有一个后缀叫做 Channel，Channel 译过来是通道的意思，这一种含义更贴近 FileChannel 的设计理念，FileChannel 是一个双向操作的 IO 流，传入对应的文件路径并且打开 FileChannel 之后既可以执行读操作也可以执行写操作，在这样的工作机制下，当我们需要对文件进行操作的时候，只需要打开对应文件的 FileChannel，再申请一个 Buffer 就可以直接操作，不用关心读取的时候的一些细节的控制。
+>
 
 # JVM
 
@@ -738,21 +729,29 @@ FileChannel 是 Java NIO 类库当中处理文件数据的一个抽象类，虽�
 
 ### Sychronized
 
-Synchronized 是 Java 内置的一个关键字，用来防止资源冲突，当任务要执行被 synchronized 关键字保护的代码片段的时候，它将检查片段的锁是否被别的线程持有，然后获取锁，执行代码，释放锁。
+Synchronized 是 Java 内置的一个关键字，是一种可重入锁的实现。
+
+一个线程访问一个对象中的synchronized(this)同步代码块时，其他试图访问该对象的线程将被阻塞。
 
 #### 原理
 
-在 JVM 中所有的对象都自动含有单一的锁，也叫做监视器。当在某一个对象上面调用任意的 synchronized 方法的时候，这个对象会被锁定，这时候其它再来请求该对象其它的 synchronized 方法只有等到前一个方法调用完毕并释放了锁之后才能被调用。所以在同一个对象当中，所有的 synchronized 的方法共享同一个锁。
+Synchronized 代码块基于字节码当中 monitor enter 与 monitor exit 指令实现；而 Synchronized 方法则是基于 JVM 常量池当中的方法表实现。
 
-#### 实现机制
+##### Synchronized 代码块实现
 
-synchronized 方法的实现第一步在编译成字节码的时候就开始了，JVM 的字节码中被 synchronized 修饰的方法在的 Class 文件方法表当中 access_flag 字段当中的 synchronized 标记为 1 表示是一个同步的方法。
+Java 编译器会将 synchronized 修饰的方法快使用 `monitor enter` 与 `monitor exit` 代码块进行编译。
 
-编译器会把 synchronized 块编译成 `monitorenter` 与 `monitorexit` 包裹的代码块，然后把方法翻译成普通的方法。
+在执行到 `monitor enter` 代码块时，JVM 会找到锁对象的 monitor 对象并查询 monitor 对象的进入数是否为 0，如果为 0 则表示没有线程持有该锁，则会将进入数 +1，并将工作线程设置为当前线程；如果不为零，则判断该工作线程是否为本线程，如果为本线程，则继续进入数 +1，非本线程则进入到阻塞状态。
 
-JVM 被要求保证当线程执行到 `monitorenter` 与 `monitorexit` 要成对使用，并且任何一个对象都必须关联一个 monitor，当这个对象的 monitor 被持有后，将处于锁定的状态，不允许其它的线程进入到 monitor 的代码块。
+在执行到 `monitor exit` 代码块时，会检查该线程是否为锁对象 monitor 的持有线程，如果是则将 monitor 进入数 -1，如果 -1 后进入数为 0，则该线程退出，释放该 monitor，其他线程可以尝试获取该锁对象的 monitor。
 
-当线程执行 `monitorenter` 的时候，对应的 monitor 对象会被锁定，然后触发对象的 monitor record 列表来获取锁的相关信息，退出便释放锁，如果 monitor 被持有，获取失败，也会刷新 monitor record 列表来获取锁信息。
+##### Synchronized 方法实现
+
+Java 编译器会在编译方法时，在该方法的常量池当中添加 `ACC_SYNCHRONIZED` 标识符来表示该方法为同步方法。
+
+当方法调用时，调用指令将会 检查方法的 `ACC_SYNCHRONIZED` 访问标志是否被设置，如果设置了，执行线程将先持有方法的 monitor， 然后再执行方法。在方法执行期间，一旦执行线程持有了 monitor，其他任何线程都无法再获得同一个monitor。如果一个同步方法执行期间抛出了异常，并且在方法内部无法处理此异常，那这个同步方法所持有的 monitor 将在异常抛到同步方法之外时自动释放。
+
+在方法完成（无论是正常完成还是非正常完成）时释 放 monitor。
 
 ### Volatile
 
