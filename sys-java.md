@@ -2596,56 +2596,59 @@ Bean 的生命周期有：实例化阶段、依赖注入阶段、初始化阶段
 
 ## Bean 初始化过程
 
-第一步，继承配置文件信息
+1. 继承配置文件信息
 
-通过 super 关键字，调用父类 AbstractApplicationContext 的初始化方法。在这个初始化方法当中，会执行两个过程，第一个过程，创建一个新的 AbstractApplicationContext，第二个过程，如果在构造方法当中传入了一个 ApplicationContext ，那么会把这个 ApplicationContext 当中的 Environment 合并到新的 AbstractApplicationContext 的 Enviroment 当中，Environment 当中存放了当前 ApplicationContext 的配置文件信息。
+> 通过 super 关键字，调用父类 AbstractApplicationContext 的初始化方法。在这个初始化方法当中，会执行两个过程，第一个过程，创建一个新的 AbstractApplicationContext，第二个过程，如果在构造方法当中传入了一个 ApplicationContext ，那么会把这个 ApplicationContext 当中的 Environment 合并到新的 AbstractApplicationContext 的 Enviroment 当中，Environment 当中存放了当前 ApplicationContext 的配置文件信息。
+>
 
-第二步，定位 BeanDefinition
+2. 定位 BeanDefinition
 
-传入的字符串会被 AbstractEnvironment 当中持有的 AbstractPropertyResolver 当中的 PropertyPlaceHolderHelper 逐一解析，并在 AbstractRefreshableConfigApplicationContext 当中被持有。
+> 传入的字符串会被 AbstractEnvironment 当中持有的 AbstractPropertyResolver 当中的 PropertyPlaceHolderHelper 逐一解析，并在 AbstractRefreshableConfigApplicationContext 当中被持有。
+>
+> 这个Resource定位指的是BeanDifinition的资源定位，它由ResourceLoader通过统一的Resource接口来完成，这个Resource对各种形式的BeanDifinition的使用都提供了统一的接口。
+>
+> 对于这些BeanDifinition的存在形式，相信大家都不会感到陌生。比如，
+>
+> 在文件系统中的Bean定义信息可以使用FileSystemResource来进行抽象。
+>
+> 在类路劲中的Bean定义信息可以使用ClassPathResource。
+>
+> 这个定位过程类似于容器寻找数据的过程，就想水桶装水先要把水找到一样。
+>
 
-这个Resource定位指的是BeanDifinition的资源定位，它由ResourceLoader通过统一的Resource接口来完成，这个Resource对各种形式的BeanDifinition的使用都提供了统一的接口。
+3. 载入与解析 BeanDefinition
 
-对于这些BeanDifinition的存在形式，相信大家都不会感到陌生。比如，
+> 这个载入过程是把用户定义好的Bean表示成Ioc容器内部的数据结构，而这个容器内部的数据结构就是BeanDifinition。
+> 具体来说，BeanDifinition实际上就是POJO对象在IOC容器中的抽象，通过这个BeanDifinition定义的数据结构，使IOC容器能够方便的对POJO对象也就是Bean进行管理。
+>
+> 整个过程通常发生在 refreshBeanFactory 方法当中，这个方法规定了 AbstractApplicationContext 的子类必须要实现配置文件的载入过程，在这个过程当中，
+> 通常会销毁以前的 BeanFactory 和 BeanFactory 当中的 Bean，然后创建一个新的 BeanFactory，并执行 loadBeanDefinitions 方法，在这个方法当中，通常会解析以 Resource 或者 String 类型表达的配置文件的所在位置。整个过程当中会通过把要解析的 Resource 放入到一个统一的 HashSet 当中，然后进行 IO 生成一个 Document 对象。接下来就是注册 Document 对象当中的 BeanDefinition 。
 
-在文件系统中的Bean定义信息可以使用FileSystemResource来进行抽象。
+4. 注册
 
-在类路劲中的Bean定义信息可以使用ClassPathResource。
-
-这个定位过程类似于容器寻找数据的过程，就想水桶装水先要把水找到一样。
-
-第三步，载入与解析 BeanDefinition
-
-这个载入过程是把用户定义好的Bean表示成Ioc容器内部的数据结构，而这个容器内部的数据结构就是BeanDifinition。
-具体来说，BeanDifinition实际上就是POJO对象在IOC容器中的抽象，通过这个BeanDifinition定义的数据结构，使IOC容器能够方便的对POJO对象也就是Bean进行管理。
-
-整个过程通常发生在 refreshBeanFactory 方法当中，这个方法规定了 AbstractApplicationContext 的子类必须要实现配置文件的载入过程，在这个过程当中，
-通常会销毁以前的 BeanFactory 和 BeanFactory 当中的 Bean，然后创建一个新的 BeanFactory，并执行 loadBeanDefinitions 方法，在这个方法当中，通常会解析以 Resource 或者 String 类型表达的配置文件的所在位置。整个过程当中会通过把要解析的 Resource 放入到一个统一的 HashSet 当中，然后进行 IO 生成一个 Document 对象。接下来就是注册 Document 对象当中的 BeanDefinition 。
-
-第四步，注册
-
-这个操作是通过调用BeanDifinitionRegistry借口来实现的。这个注册过程把载入过程中解析得到的BeanDifinition向Ioc容器进行注册。
-在阅读源码中可知，在IOC容器内部将BeanDifinition注入到一个HashMap中去，Ioc容器就是通过这个HashMap来持有这些BeanDifinition数据的。
-
-初始化 ReaderContext 的时候，会把 DefaultLisableBeanFactory 当中坐 BeanDefinitionRegistry 注入进去，在后面调用 BeanDefinitionRegistry 的 registerBeanDefinition 方法的时候，就把 BeanDefinition 全部注入到 beanDefinitionMap 当中了。
+> 这个操作是通过调用BeanDifinitionRegistry借口来实现的。这个注册过程把载入过程中解析得到的BeanDifinition向Ioc容器进行注册。
+> 在阅读源码中可知，在IOC容器内部将BeanDifinition注入到一个HashMap中去，Ioc容器就是通过这个HashMap来持有这些BeanDifinition数据的。
+>
+> 初始化 ReaderContext 的时候，会把 DefaultLisableBeanFactory 当中坐 BeanDefinitionRegistry 注入进去，在后面调用 BeanDefinitionRegistry 的 registerBeanDefinition 方法的时候，就把 BeanDefinition 全部注入到 beanDefinitionMap 当中了。
+>
 
 ## IOC
 
 ### 什么是  IOC
 
-即控制反转，是一种设计思想，在Java开发中，Ioc意味着将你设计好的对象交给容器控制，而不是传统的在你的对象内部直接控制。
+即控制反转，是一种设计思想，在 Java 开发中，Ioc 意味着将你设计好的对象交给容器控制，而不是传统的在你的对象内部直接控制。
 
 ### 依赖注入的过程
 
-依赖注入的过程是用户第一次向 IOC 容器索要 Bean 的时候发生的，有特殊情况，也就是在 BeanDefinition 信息当中通过控制 lazy-init 属性来让容器完成对 bean 的预示例化
+依赖注入的过程是用户第一次向 IOC 容器索要 Bean 的时候发生的，有特殊情况，也就是在 BeanDefinition 信息当中通过控制 lazy-init 属性来让容器完成对 bean 的预示例化。
 
-依赖注入主要有两个过程，一是 bean 示例化，二是依赖解析与注入
+依赖注入主要有两个过程，一是 bean 示例化，二是依赖解析与注入。
 
-在createBeanInstance方法中，根据指定的初始化策略，使用静态工厂、工厂方法或者容器的自动装配特性生成 java 实例对象
+在 createBeanInstance 方法中，根据指定的初始化策略，使用静态工厂、工厂方法或者容器的自动装配特性生成 java 实例对象。
 
-然后接下来首先对属性进行解析，如果属性类型不转换，那么直接准备依赖注入，然后通过调用 BeanWrapper 当中的方法来完成依赖注入
+然后接下来首先对属性进行解析，如果属性类型不转换，那么直接准备依赖注入，然后通过调用 BeanWrapper 当中的方法来完成依赖注入。
 
-在创建和对象依赖注入的时候，都是依据 BeanDefinition 的信息来递归调用完成的，第一个在上下文体系当中查找是否有需要的 Bean 和创建 Bean的递归调用，第二个是通过递归调用容器的 getBean 方法获得当前 bean 依赖的 bean，同时也触发对依赖 Bean 的创建和注入过程
+在创建和对象依赖注入的时候，都是依据 BeanDefinition 的信息来递归调用完成的，第一个在上下文体系当中查找是否有需要的 Bean 和创建 Bean的递归调用，第二个是通过递归调用容器的 getBean 方法获得当前 bean 依赖的 bean，同时也触发对依赖 Bean 的创建和注入过程。
 
 ## AOP
 
@@ -3484,7 +3487,93 @@ delete from methd where method_name='method_name';
 3. 这把锁只能是非阻塞的，因为数据的insert操作，一旦插入失败就会直接报错。没有获得锁的线程并不会进入排队队列，要想再次获得锁就要再次触发获得锁操作。(搞一个while循环，直到insert成功再返回成功。)
 4. 这把锁是非重入的，同一个线程在没有释放锁之前无法再次获得该锁。因为数据中数据已经存在了。(在数据库表中加个字段，记录当前获得锁的机器的主机信息和线程信息，那么下次再获取锁的时候先查询数据库，如果当前机器的主机信息和线程信息在数据库可以查到的话，直接把锁分配给他就可以了。)
 
+### 基于 Redis 
 
+#### 使用 SETNX 指令
+
+该指令只在 key 不存在的情况下，将 key 的值设置为 value，若 key 已经存在，则 SETNX 命令不做任何动作。
+
+在资源使用完成后，使用 DEL 删除该 key 对锁进行释放。
+
+> 比如在某商城的秒杀活动中对某一商品加锁，那么 key 可以设置为  lock_resource_id ，value 可以设置为任意值。
+
+##### 执行过程
+
+1. `SETNX lock_id lock_value` 加锁
+2. 执行业务
+3. `DEL lock_id` 释放锁
+
+##### 存在问题
+
+如果获得锁的进程在业务逻辑处理过程中出现了异常，可能会导致 DEL 指令一直无法执行，导致锁无法释放，该资源将会永远被锁住。
+
+#### 使用 SETNX 指令 + 过期时间
+
+在 SETNX 基础上使用 EXPIRE 命令为锁添加过期时间。
+
+##### 执行过程
+
+1. `SETNX lock_id lock_value` 加锁
+2. `EXPIRE lock_id 10` 设置过期时间
+3. 执行业务
+4. `DEL lock_id` 释放锁
+
+##### 存在问题
+
+由于 SETNX 和 EXPIRE 这两个操作是非原子性的， 如果进程在执行 SETNX 和 EXPIRE 之间发生异常，SETNX 执行成功，但 EXPIRE 没有执行，还是会导致锁无法正常释放。
+
+#### 使用 SET 扩展
+
+Redis 提供了 SET 指令的扩展，柔和了 SETNX 与 EXPIRE 功能。
+
+```
+SET lock_id lock_value NX EX 10 
+// NX 表示只有当 lock_resource_id 对应的 key 值不存在的时候才能 SET 成功。
+// EX 10 表示这个锁 10 秒钟后会自动过期。
+```
+
+> lock_value 可以是线程 ID，用来校验当前的锁是不是该线程。
+
+##### 存在问题
+
+- 锁被提前释放。假如线程 A 在加锁和释放锁之间的逻辑执行的时间过长（或者线程 A 执行过程中被堵塞），以至于超出了锁的过期时间后进行了释放，但线程 A 在临界区的逻辑还没有执行完，那么这时候线程 B 就可以提前重新获取这把锁，导致临界区代码不能严格的串行执行。
+- 锁被误删。假如以上情形中的线程 A 执行完后，它并不知道此时的锁持有者是线程 B，线程 A 会继续执行 DEL 指令来释放锁，如果线程 B 在临界区的逻辑还没有执行完，线程 A 实际上释放了线程 B 的锁。
+
+#### 使用 SET 扩展 + 守护线程
+
+获得锁的线程开启一个定时器的守护线程，每 expireTime/3 执行一次，去检查该线程的锁是否存在，如果存在则对锁的过期时间重新设置为 expireTime，防止锁由于过期提前释放。
+
+##### 存在问题
+
+守护线程需要单独实现。
+
+其次 Redis 单节点故障也是存在的，即使 Redis 通过 Sentinel 保证了高可用，但由于 Redis 的复制是异步的，Master 节点获取到锁后在未完成数据同步的情况下发生故障转移，此时其他客户端上的线程依然可以获取到锁，因此会丧失锁的安全性。
+
+> 整个过程如下：
+>
+> 1. 客户端 A 从 Master 节点获取锁。
+> 2. Master 节点出现故障，主从复制过程中，锁对应的 key 没有同步到 Slave 节点。
+> 3. Slave 升级为 Master 节点，但此时的 Master 中没有锁数据。
+> 4. 客户端 B 请求新的 Master 节点，并获取到了对应同一个资源的锁。
+> 5. 出现多个客户端同时持有同一个资源的锁，不满足锁的互斥性。
+
+#### Redis 提供的算法
+
+假设有 N（N>=5）个 Redis 节点，这些节点完全互相独立，不存在主从复制或者其他集群协调机制，确保在这 N 个节点上使用与在 Redis 单实例下相同的方法获取和释放锁。
+
+##### 加锁过程
+
+1. 获取当前 Unix 时间，以毫秒为单位；
+2. 按顺序依次尝试从 5 个实例使用相同的 key 和具有唯一性的 value（例如 UUID）获取锁。当向 Redis 请求获取锁时，客户端应该设置一个网络连接和响应超时时间，这个超时时间应该小于锁的失效时间。例如锁自动失效时间为 10 秒，则超时时间应该在 5-50 毫秒之间。这样可以避免服务器端 Redis 已经挂掉的情况下，客户端还在一直等待响应结果。如果服务器端没有在规定时间内响应，客户端应该尽快尝试去另外一个 Redis 实例请求获取锁；
+3. 客户端使用当前时间减去开始获取锁时间（步骤 1 记录的时间）就得到获取锁使用的时间。当且仅当从大多数（N/2+1，这里是 3 个节点）的 Redis 节点都取到锁，并且使用的时间小于锁失效时间时，锁才算获取成功；
+4. 如果取到了锁，key 的真正有效时间等于有效时间减去获取锁所使用的时间（步骤 3 计算的结果）；
+5. 如果因为某些原因，获取锁失败（没有在至少 N/2+1 个 Redis 实例取到锁或者取锁时间已经超过了有效时间），客户端应该在所有的 Redis 实例上进行解锁（使用 Redis Lua 脚本）。
+
+##### 释放锁过程
+
+释放锁的过程相对比较简单：客户端向所有 Redis 节点发起释放锁的操作，包括加锁失败的节点，也需要执行释放锁的操作。
+
+> 原因是可能存在某个节点加锁成功后返回客户端的响应包丢失了，这种情况在异步通信模型中是有可能发生的：客户端向服务器通信是正常的，但反方向却是有问题的。虽然对客户端而言，由于响应超时导致加锁失败，但是对 Redis 节点而言，SET 指令执行成功，意味着加锁成功。因此，释放锁的时候，客户端也应该对当时获取锁失败的那些 Redis 节点同样发起请求。
 
 # 数据结构
 
